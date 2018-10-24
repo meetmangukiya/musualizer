@@ -31,6 +31,8 @@ export class VisualizerComponent implements OnInit {
     console.log(this.array);
     this.refresh();
     setInterval(() => this.refresh(), 25);
+    let switcher = <HTMLSelectElement>document.getElementById('method');
+    setInterval(() => switcher.value == 'Bars' ? switcher.value = "Circular bars" : switcher.value = "Bars", 5000);
 
     document.body.style.backgroundColor = 'orange';
   }
@@ -47,24 +49,10 @@ export class VisualizerComponent implements OnInit {
     document.getElementById('visual').scrollIntoView();
   }
 
-  refresh() {
-    console.log(this.sourceNode);
-    const canvas = <HTMLCanvasElement>document.getElementById('visual');
-
-    const ctx = canvas.getContext('2d');
-    const array = new Uint8Array(this.analyser.frequencyBinCount);
-    this.analyser.getByteFrequencyData(array);
-
-    console.log(array);
-
-    const timearr = new Uint8Array(this.analyser.frequencyBinCount);
-    this.analyser.getByteTimeDomainData(timearr);
-
-    const divisions = array.length;
+  circularBars(ctx, freq, time) {
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const center = {
       x: vw / 2,
@@ -76,7 +64,7 @@ export class VisualizerComponent implements OnInit {
     let startAngle = 0;
     ctx.beginPath();
 
-    let tmp = array.filter(a => a != 0);
+    let tmp = freq.filter(a => a != 0);
     let stepAngle = Math.PI * 2 / tmp.length;
 
     for(let i = 0; i < tmp.length; i++) {
@@ -93,7 +81,7 @@ export class VisualizerComponent implements OnInit {
     startAngle = 0;
     ctx.beginPath();
 
-    tmp = timearr.filter(a => a != 0);
+    tmp = time.filter(a => a != 0);
     stepAngle = Math.PI * 2 / tmp.length;
 
     for(let i = 0; i < tmp.length; i++) {
@@ -105,6 +93,63 @@ export class VisualizerComponent implements OnInit {
     ctx.closePath();
     ctx.fillStyle = '#8b008b';
     ctx.fill();
+  }
+
+  refresh() {
+    const canvas = <HTMLCanvasElement>document.getElementById('visual');
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const array = new Uint8Array(this.analyser.frequencyBinCount);
+    this.analyser.getByteFrequencyData(array);
+
+    //console.log(array);
+
+    const timearr = new Uint8Array(this.analyser.frequencyBinCount);
+    this.analyser.getByteTimeDomainData(timearr);
+
+    const method = (<HTMLSelectElement>document.getElementById('method')).value;
+    console.log(method);
+
+    switch(method) {
+      case 'Circular bars':
+        console.log("executing...")
+        this.circularBars(ctx, array, timearr);
+        break;
+      case 'Bars':
+        this.bars(ctx, array, timearr);
+        break;
+    }
+  }
+
+  bars(ctx, freq, time) {
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+
+    const height = vh / 2;
+
+    let start = 0;
+
+    let tmp = freq.filter(a => a != 0);
+    let step = vw / tmp.length;
+
+    const getRandomColor = () => {
+      var str = "0123456789ABCDEF";
+
+      var res = '#';
+      for(let i = 0; i < 6; i++) {
+        res += str[Math.floor(Math.random() * 16)];
+      }
+
+      return res;
+    }
+
+    for(let i = 0; i < tmp.length; i++) {
+      const displacement = (tmp[i]) / 256 * height;
+      ctx.fillStyle = getRandomColor();
+      ctx.fillRect(start, vh - height - displacement, step, height + displacement);
+      start += step;
+    }
   }
 
   visualize(data) {
