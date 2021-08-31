@@ -3,7 +3,7 @@ node_js:
   - "node"
 
 script:
-  - ng build --base-href https://myrhy.me/musualizer/
+  - ng build --base-href https://meetmangukiya.github.io/musualizer/
 
 deploy:
   provider: pages
